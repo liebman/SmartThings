@@ -204,9 +204,21 @@ def inTimeWindow() {
     def now = now()
     def result = true
     if (starting && ending) {
-        result = now >= timeToday(starting, location.timeZone).time &&
-                 now <= timeTodayAfter(starting, ending, location.timeZone).time
+        result = now >= startTime &&
+                 now < endTime
     }
     log.debug("inTimeWindow() returning ${result}")
 	return result
+}
+
+def getStartTime() {
+    def date = timeToday(starting, location.timeZone)
+    log.debug("getStartTime() returning: ${date}")
+    return date.time
+}
+
+def getEndTime() {
+    def date = timeTodayAfter(starting, ending, location.timeZone)
+    log.debug("getEndTime() returning: ${date}")
+    return date.time
 }
