@@ -25,16 +25,19 @@ definition(
 
 
 preferences {
-    section("Settings") {
-        input "switches",          "capability.switch", title: "Control these switches...", multiple: true
-        input "modes",             "mode",              title: "In these modes...", multiple: true
-        input "active",            "number",            title: "Active switch count"
-        input "interval",          "number",            title: "Minutes between changes"
-        input "intervalVariation", "number",            title: "Variation minutes for changes"
-        input "intervalMinimum",   "number",            title: "Minumum interval in minutes"
-        input "intervalMaximum",   "number",            title: "Maximum interval in minutes"
-        input "starting",          "time",              title: "Start time", required: false
-        input "ending",            "time",              title: "End time",   required: false
+    page(title: "Setup") {
+        section("Settings") {
+            input "switches", "capability.switch", title: "Control these switches...", multiple: true
+            input "modes", "mode", title: "In these modes...", multiple: true
+            input "modeDelay", "number", title: "Delay in minutes from mode change to first light change"
+            input "active", "number", title: "Active switch count"
+            input "interval", "number", title: "Minutes between changes"
+            input "intervalVariation", "number", title: "Variation minutes for changes"
+            input "intervalMinimum", "number", title: "Minumum interval in minutes"
+            input "intervalMaximum", "number", title: "Maximum interval in minutes"
+            input "starting", "time", title: "Start time", required: false
+            input "ending", "time", title: "End time", required: false
+        }
     }
 }
 
@@ -79,7 +82,11 @@ def initialize() {
 // called when the mode changes
 def modeChangeHandler(evt) {
     log.debug("modeChangeHandler(${evt.value})")
-    doActivity()
+    if (modeDelay) {
+        runIn(modeDelay*60, intervalHandler)
+    } else {
+        doActivity()
+    }
 }
 
 // called when time window starts
