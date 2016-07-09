@@ -25,7 +25,7 @@ definition(
 
 
 preferences {
-    page(title: "Setup") {
+    page(name: "Setup", title: "Setup", install: true, uninstall: true) {
         section("Settings") {
             input "switches", "capability.switch", title: "Control these switches...", multiple: true
             input "modes", "mode", title: "In these modes...", multiple: true
