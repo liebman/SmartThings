@@ -33,8 +33,8 @@ preferences {
             input "active", "number", title: "Active switch count"
             input "interval", "number", title: "Minutes between changes"
             input "intervalVariation", "number", title: "Variation minutes for changes"
-            input "intervalMinimum", "number", title: "Minumum interval in minutes"
-            input "intervalMaximum", "number", title: "Maximum interval in minutes"
+            input "intervalMinimum", "number", title: "Minumum interval in minutes", required: false
+            input "intervalMaximum", "number", title: "Maximum interval in minutes", required: false
             input "starting", "time", title: "Start time", required: false
             input "ending", "time", title: "End time", required: false
         }
@@ -138,7 +138,7 @@ def randomLights() {
 }
 
 def scheduleInterval() {
-    def delay = computeVariation(interval, intervalVariation, minimum, maximum)
+    def delay = computeVariation(interval, intervalVariation, intervalMinimum, intervalMaximum)
     debug("scheduleInterval", "scheduling intervalHandler to run in ${delay} minutes")
     // must use runIn() as cron scheduling only works for smaller values
     runIn(delay*60, intervalHandler)
@@ -146,11 +146,12 @@ def scheduleInterval() {
 
 // compute a value +/- ramdome value up to variation
 def computeVariation(value, variation, minimum, maximum) {
+    debug("computeVariation", "${value}, ${variation}, ${minimum}, ${maximum}")
     def random = new Random().nextInt(variation*2) - variation
     def result = value + random
-    if (result < minimum) {
+    if (minimum && result < minimum) {
         result = minimum
-    } else if (result > maximum) {
+    } else if (maximum && result > maximum) {
         result = maximum
     }
     return result
