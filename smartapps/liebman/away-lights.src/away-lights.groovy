@@ -42,7 +42,7 @@ preferences {
 }
 
 def getVersion() {
-   return "0.7"
+   return "0.8"
 }
 
 def installed() {
@@ -139,7 +139,7 @@ def randomLights() {
 
 def scheduleInterval() {
     def delay = computeVariation(interval, intervalVariation, intervalMinimum, intervalMaximum)
-    debug("scheduleInterval", "scheduling intervalHandler to run in ${delay} minutes")
+    debug("scheduleInterval", "${delay} minutes")
     // must use runIn() as cron scheduling only works for smaller values
     runIn(delay*60, intervalHandler)
 }
