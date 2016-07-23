@@ -33,10 +33,11 @@ preferences {
             input "active", "number", title: "Active switch count"
             input "interval", "number", title: "Minutes between changes"
             input "intervalDelay", "number", title: "increase interval by up to this randomly"
-            input "starting", "time", title: "Start time", required: false
+            input "starting", "time", title: "Start time"
             input "startingDelay", "number", title: "random delay for start time"
-            input "ending", "time", title: "End time", required: false
+            input "ending", "time", title: "End time"
             input "endingDelay", "number", title: "random delay for end time"
+            input "debugEvents", "bool", title: "send debug messages as events", defaultValue: false
         }
     }
 }
@@ -80,7 +81,9 @@ def initialize() {
 
 def debug(name, value) {
     log.debug("${name}: ${value}")
-    sendEvent(linkText:app.label, name:name, value:value, eventType:"SOLUTION_EVENT", displayed: true)
+    if (debugEvents) {
+	    sendEvent(linkText:app.label, name:name, value:value, eventType:"SOLUTION_EVENT", displayed: true)
+    }
 }
 
 // called when the mode changes
@@ -162,7 +165,7 @@ def computeNextInterval(value, delay) {
 }
 
 def getRandomDelay(maxDelay) {
-    return new Random().nextInt(delay)
+    return new Random().nextInt(maxDelay)
 }
 
 // fetch and maybe remove <number> random items from <delagate>
