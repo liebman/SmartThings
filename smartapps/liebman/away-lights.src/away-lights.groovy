@@ -32,17 +32,17 @@ preferences {
             input "modeDelay", "number", title: "Delay in minutes from mode change to first light change"
             input "active", "number", title: "Active switch count"
             input "interval", "number", title: "Minutes between changes"
-            input "intervalVariation", "number", title: "Variation minutes for changes"
-            input "intervalMinimum", "number", title: "Minumum interval in minutes", required: false
-            input "intervalMaximum", "number", title: "Maximum interval in minutes", required: false
+            input "intervalDelay", "number", title: "increase interval by up to this randomly"
             input "starting", "time", title: "Start time", required: false
+            input "startingDelay", "number", title: "random delay for start time"
             input "ending", "time", title: "End time", required: false
+            input "endingDelay", "number", title: "random delay for end time"
         }
     }
 }
 
 def getVersion() {
-   return "0.8"
+   return "0.9"
 }
 
 def installed() {
@@ -61,12 +61,12 @@ def updated() {
 
 def initialize() {
     log.trace("initialize() version:${version}")
-    
+
     if (modes) {
         log.debug("subscribing to mode changes")
         subscribe(location, "mode", modeChangeHandler)
     }
-    
+
     if (starting) {
         log.debug("scheduling starting time: ${starting}")
         schedule(starting, startTimeHandler)
@@ -75,7 +75,6 @@ def initialize() {
             schedule(ending, endTimeHandler)
         }
     }
-    
     doActivity()
 }
 
@@ -101,15 +100,25 @@ def modeChangeHandler(evt) {
 // called when time window starts
 def startTimeHandler(evt) {
     debug("startTimeHandler", "called")
-    doActivity()
+    def delay = getRandomDelay(startingDelay)
+    debug("startTimeHandler", "delaying ${delay} minutes")
+    runIn(delay*60, doActivity())
 }
 
 // called when time window ends
 def endTimeHandler(evt) {
     debug("endTimeHandler", "called")
-    // if we are still in the mode, turn all the lights off.
+    def delay = getRandomDelay(startingDelay)
+    debug("endTimeHandler", "delaying ${delay} minutes")
+    runIn(getRandomDelay(endingDelay)*60, endTimeActivity)
+}
+
+def endTimeActivity() {
+    debug("endTimeHandler", "called")
+    // if we are still in the mode, turn all the managed lights off.
     if (inMode()) {
-       switches.off()
+        debug("endTimeHandler", "managed lights off")
+        switches.off()
     }
 }
 
@@ -138,43 +147,43 @@ def randomLights() {
 }
 
 def scheduleInterval() {
-    def delay = computeVariation(interval, intervalVariation, intervalMinimum, intervalMaximum)
+    def delay = computeNextInterval(interval, intervalDelay)
     debug("scheduleInterval", "${delay} minutes")
     // must use runIn() as cron scheduling only works for smaller values
     runIn(delay*60, intervalHandler)
 }
 
-// compute a value +/- ramdome value up to variation
-def computeVariation(value, variation, minimum, maximum) {
-    debug("computeVariation", "${value}, ${variation}, ${minimum}, ${maximum}")
-    def random = new Random().nextInt(variation*2) - variation
+// compute a value with random delay
+def computeNextInterval(value, delay) {
+    debug("computeNextInterval", "${value}, ${delay}")
+    def random = getRandomDelay(delay)
     def result = value + random
-    if (minimum && result < minimum) {
-        result = minimum
-    } else if (maximum && result > maximum) {
-        result = maximum
-    }
     return result
+}
+
+def getRandomDelay(maxDelay) {
+    return new Random().nextInt(delay)
 }
 
 // fetch and maybe remove <number> random items from <delagate>
 def getRandomElements(delegate, number, remove) {
     def rnd = new Random()
-    
+
     if(number < 1) {
         number = 1
     }
-	
+
     def tempList = []
     def counter = 0
 
+    // if asking for all or more than we have, return all
     if (number >= delegate.size()) {
         tmpList.addAll(delegate)
         delegate.removeAll()
         return tmpList
     }
-    
-    
+
+
     while(counter < number) {
         def index = rnd.nextInt(delegate.size())
         tempList.add(delegate[index])
