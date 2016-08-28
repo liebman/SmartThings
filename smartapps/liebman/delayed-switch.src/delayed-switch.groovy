@@ -25,17 +25,11 @@ definition(
 
 
 preferences {
-    section("Switch for delayed ON/OFF") {
-        input "master", "capability.switch", title: "Select", required: true
-    }
-
-    section ("Delayed ON or OFF?") {
-        input "action", "enum", title: "Action:", multiple: false, required: true, options: ["on", "off"]
-    }
-
-	section("Action delay in seconds") {
-		input "delay", "number" , title: "delay:", required: true
-	}
+    input "master", "capability.switch", title: "Select switch:", required: true
+    input "action", "enum", title: "Action:", multiple: false, required: true, options: ["on", "off"], defaultValue: "off"
+    input "delay", "number" , title: "Action delay:", required: false, defaultValue: 900
+    input "feedback", "capability.switch", title: "Select feedback switch:", required: false
+    input "feedbackDuration", "number" , title: "feedback duration (ms):", required: false, defaultValue: 1000
 }
 
 def installed() {
@@ -62,6 +56,9 @@ def switchHandler(evt) {
     log.info "stateChange: ${evt.isStateChange()}"
     
     if (evt.isPhysical() && !evt.isStateChange() && !action.equalsIgnoreCase(evt.value)) {
+        if (feedback) {
+            startFeedback(evt)
+        }
         log.info "scheduling delayed ${action} in ${delay} seconds"
         runIn(delay, delayedActionHandler)
         log.info "back from runIn()"
@@ -79,5 +76,39 @@ def delayedActionHandler() {
         master.on()
     }
     log.info "delayedActionHandler complete"
+}
+
+def startFeedback(evt) {
+    log.info "starting feedback"
+    def current = feedback.latestState("switch").value
+    if (feedback == master) {
+       log.info "feedback is same as master - using event info for state"
+       current = master.latestState("switch").value
+    }
+    
+    if (current == 'on') {
+        log.info "feedback current state is 'on' so turning it off"
+        feedback.off()
+        feedback.on(delay: feedbackDuration)
+    } else {
+        log.info "feedback current state is 'off' so turning it on"
+        feedback.on()
+        feedback.off(delay: feedbackDuration)
+    }
+    
+    /* runIn(feedbackDuration, endFeedback) */
+    log.info "feedback started!"
+}
+
+def endFeedback() {
+    log.info "ending feedback"
+    if (feedback.currentState == 'on') {
+        log.info "ending feedback state is 'on' so turning it off"
+        feedback.off()
+    } else {
+        log.info "ending feedback state is 'off' so turning it on"
+        feedback.on()
+    }
+    log.info "feedback ended!"
 }
 
