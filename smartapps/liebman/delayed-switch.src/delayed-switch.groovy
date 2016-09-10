@@ -46,23 +46,49 @@ def updated() {
 }
 
 def initialize() {
-    // TODO: subscribe to attributes, devices, locations, etc.
     subscribe(master, "switch", switchHandler, [filterEvents: false])
 }
 
 def switchHandler(evt) {
-	log.info "value: ${evt.value} action: ${action}"
-    log.info "physical: ${evt.isPhysical()}"
-    log.info "stateChange: ${evt.isStateChange()}"
-    
-    if (evt.isPhysical() && !evt.isStateChange() && !action.equalsIgnoreCase(evt.value)) {
-        if (feedback) {
-            startFeedback(evt)
+	log.info "CURRENT: value: ${evt.value} phys:${evt.isPhysical()} change:${evt.isStateChange()} date:${evt.date} id:${evt.id}"
+    def history = master.events(max: 10)
+    // dumpEvents(history)
+    // we must have some history
+    if (history && history.size() > 1) {
+	    // find the previous event
+    	def prev = history.get(0)
+        if (prev.id.equals(evt.id)) {
+            log.warn "first history event was the current one, using the one before that!"
+            prev = history.get(1)
         }
-        log.info "scheduling delayed ${action} in ${delay} seconds"
-        runIn(delay, delayedActionHandler)
-        log.info "back from runIn()"
+		// make sure the last two events were physical
+        log.info "PREVIOUS: value: ${prev.value} phys: ${prev.isPhysical()} change:${prev.isStateChange()} date:${prev.date} id:${prev.id}"
+        
+        if (evt.isPhysical() && !evt.isStateChange() && !action.equalsIgnoreCase(evt.value) && prev.isPhysical()) {
+            if (feedback) {
+                startFeedback(evt)
+            }
+            log.info "scheduling delayed ${action} in ${delay} seconds"
+            runIn(delay, delayedActionHandler)
+            log.info "back from runIn()"
+        } else if (evt.isPhysical() && evt.isStateChange() && action.equalsIgnoreCase(evt.value)) {
+            // cancel if someone physically changes it.
+            log.info "unscheduling incase we were active!"
+            unschedule()
+        }
     }
+}
+
+def dumpEvents(events) {
+   log.warn "****** start event history size:${events.size()} ******"
+   for(def i = 0; i < events.size(); ++i) {
+       def e = events.get(i)
+       log.warn "index:${i} date:${e.date} value:${e.value} phys:${e.isPhysical()} dgtl:${e.isDigital()} id:${e.id}"
+   }
+//   for (def e : events) {
+//       log.info "date:${e.date} value:${e.value} phys:${e.isPhysical()} dgtl:${e.isDigital()} id:${e.id}"
+//   }
+  log.warn "****** end event history ******"
 }
 
 def delayedActionHandler() {
