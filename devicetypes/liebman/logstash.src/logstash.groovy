@@ -42,7 +42,7 @@ metadata {
 
 // parse events into attributes
 def parse(String description) {
-    log.debug "Parsing '${description}'"
+    //log.debug "Parsing '${description}'"
     def map = parseLanMessage(description);
     //log.debug "As LAN: " + map;
     if (!map.body?.equals('ok')) {
@@ -72,8 +72,7 @@ def log(level, message) {
     def dateNow = new Date()
     def isoDateNow = dateNow.format("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
     def json = new groovy.json.JsonBuilder()
-    json.call("date":dateNow,
-              "isoDate":isoDateNow,
+    json.call("isoDate":isoDateNow,
               "level":level,
               "message":message)
     
@@ -82,10 +81,11 @@ def log(level, message) {
     def headers = [:] 
     headers.put("HOST", logstash)
     headers.put("Content-Type", "application/json")
+    headers.put("Connection", "close")
     
     try {
         //log.debug "creating hubAction with logstash address: ${logstash} (${isoDateNow})"
-        def hubAction = new physicalgraph.device.HubAction(method:"POST", path:"/${isoDateNow}", body:json, headers:headers)
+        def hubAction = new physicalgraph.device.HubAction(method:"POST", path:"/", body:json.content, headers:headers)
         //log.debug "hubAction:" + hubAction
         return hubAction
     } catch (Exception e) {
