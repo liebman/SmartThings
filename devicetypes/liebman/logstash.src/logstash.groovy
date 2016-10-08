@@ -18,6 +18,8 @@ metadata {
 		capability "Switch"
 
 		command "log", ["string", "string"]
+		command "log", ["string", "string", "string"]
+        command "log", ["Event"]
 	}
 
     input("logstashIP", "string", title:"LogStash IP Address", description:"Please enter your LogStash I.P. address", defaultValue:"192.168.0.42" , required: true, displayDuringSetup: true)
@@ -62,7 +64,50 @@ def off() {
 	// TODO: handle 'off' command
 }
 
-def log(level, message) {
+def log(evt) {
+    //log.debug "EVENT: id:${evt.id} device:${evt.device} description:${evt.descriptionText}"
+    
+    def hosthex = convertIPtoHex(logstashIP)
+    def porthex = convertPortToHex(logstashPort)
+    device.deviceNetworkId = "$hosthex:$porthex"
+    
+    def json = new groovy.json.JsonBuilder()
+    json.call("level":"event",
+              "name":evt.name,
+              "deviceName": evt.device ? evt.device.displayName : "NULL",
+              "deviceId": evt.deviceId ? evt.deviceId : "NULL",
+              "value": evt.value ? evt.value : "NULL",
+              "isStateChange": evt.isStateChange,
+              "id":evt.id,
+              "message":evt.descriptionText,
+              "isoDate":evt.isoDate,
+              "digital":evt.digital,
+              "physical":evt.physical,
+              "locationId":evt.locationId,
+              "source":evt.source
+              )
+    def content = json.content
+    log.debug "logEvent() json:${content}"
+    
+    def logstash = "${logstashIP}:${logstashPort}"
+        
+    def headers = [:] 
+    headers.put("HOST", logstash)
+    headers.put("Content-Type", "application/json")
+    headers.put("Connection", "close")
+    
+    try {
+        log.debug "creating hubAction with logstash address: ${logstash}"
+        def hubAction = new physicalgraph.device.HubAction(method:"POST", path:"/", body:content, headers:headers)
+        //log.debug "hubAction:" + hubAction
+        //log.debug "hubAction: created"
+        return hubAction
+    } catch (Exception e) {
+        log.error "Hit Exception ${e}" //" on ${hubAction}"
+    }
+}
+
+def log(level, item, message) {
     //log.debug "Executing 'log' level:${level} message:${message}"
 
     def hosthex = convertIPtoHex(logstashIP)
@@ -74,6 +119,7 @@ def log(level, message) {
     def json = new groovy.json.JsonBuilder()
     json.call("isoDate":isoDateNow,
               "level":level,
+              "deviceName":item,
               "message":message)
     
     def logstash = "${logstashIP}:${logstashPort}"
@@ -91,6 +137,10 @@ def log(level, message) {
     } catch (Exception e) {
         log.error "Hit Exception ${e} on ${hubAction}"
     }
+}
+
+def log(level, message) {
+    log(level, "UNKNOWN", message)
 }
 
 private String convertIPtoHex(ipAddress) { 
