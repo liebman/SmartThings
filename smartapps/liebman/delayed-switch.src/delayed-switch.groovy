@@ -30,16 +30,17 @@ preferences {
     input "delay", "number" , title: "Action delay:", required: false, defaultValue: 900
     input "feedback", "capability.switch", title: "Select feedback switch:", required: false
     input "feedbackDuration", "number" , title: "feedback duration (ms):", required: false, defaultValue: 1000
+    input "logger", "capability.switch", title: "LogDevice:", required: false
 }
 
 def installed() {
-	log.debug "Installed with settings: ${settings}"
+	logit "debug", "Installed with settings: ${settings}"
 
 	initialize()
 }
 
 def updated() {
-	log.debug "Updated with settings: ${settings}"
+	logit "debug", "Updated with settings: ${settings}"
 
 	unsubscribe()
 	initialize()
@@ -47,94 +48,111 @@ def updated() {
 
 def initialize() {
     subscribe(master, "switch", switchHandler, [filterEvents: false])
+    subscribe(location, null, locationHandler, [filterEvents: false])
+}
+
+def locationHandler(evt) {
+    logit "info", "location result: ${evt.description}"
 }
 
 def switchHandler(evt) {
-	log.info "CURRENT: value: ${evt.value} phys:${evt.isPhysical()} change:${evt.isStateChange()} date:${evt.date} id:${evt.id}"
+	logit "info", "CURRENT: value: ${evt.value} phys:${evt.isPhysical()} change:${evt.isStateChange()} date:${evt.date} id:${evt.id} app:${app.label}"
     def history = master.events(max: 10)
-    // dumpEvents(history)
+    dumpEvents(history)
     // we must have some history
     if (history && history.size() > 1) {
 	    // find the previous event
     	def prev = history.get(0)
         if (prev.id.equals(evt.id)) {
-            log.warn "first history event was the current one, using the one before that!"
+            logit "warn", "first history event was the current one, using the one before that!"
             prev = history.get(1)
         }
 		// make sure the last two events were physical
-        log.info "PREVIOUS: value: ${prev.value} phys: ${prev.isPhysical()} change:${prev.isStateChange()} date:${prev.date} id:${prev.id}"
+        logit "info", "PREVIOUS: value: ${prev.value} phys: ${prev.isPhysical()} change:${prev.isStateChange()} date:${prev.date} id:${prev.id}"
         
         if (evt.isPhysical() && !evt.isStateChange() && !action.equalsIgnoreCase(evt.value) && prev.isPhysical()) {
             if (feedback) {
                 startFeedback(evt)
             }
-            log.info "scheduling delayed ${action} in ${delay} seconds"
+            logit "info", "scheduling delayed ${action} in ${delay} seconds"
             runIn(delay, delayedActionHandler)
-            log.info "back from runIn()"
+            logit "info", "back from runIn()"
         } else if (evt.isPhysical() && evt.isStateChange() && action.equalsIgnoreCase(evt.value)) {
             // cancel if someone physically changes it.
-            log.info "unscheduling incase we were active!"
+            logit "info", "unscheduling incase we were active!"
             unschedule()
         }
     }
 }
 
 def dumpEvents(events) {
-   log.warn "****** start event history size:${events.size()} ******"
+   logit "debug", "****** start event history size:${events.size()} ******"
    for(def i = 0; i < events.size(); ++i) {
        def e = events.get(i)
-       log.warn "index:${i} date:${e.date} value:${e.value} phys:${e.isPhysical()} dgtl:${e.isDigital()} id:${e.id}"
+       logit "debug", "index:${i} date:${e.date} value:${e.value} phys:${e.isPhysical()} dgtl:${e.isDigital()} id:${e.id}"
    }
-//   for (def e : events) {
-//       log.info "date:${e.date} value:${e.value} phys:${e.isPhysical()} dgtl:${e.isDigital()} id:${e.id}"
-//   }
-  log.warn "****** end event history ******"
+
+  logit "debug", "****** end event history ******"
 }
 
 def delayedActionHandler() {
-    log.info "delayedActionHandler called!"
+    logit "info", "delayedActionHandler called!"
     
     if (action == "off") {
-        log.info "turning it off"
+        logit "info", "turning it off"
         master.off()
     } else {
-        log.info "turning it on"
+        logit "info", "turning it on"
         master.on()
     }
-    log.info "delayedActionHandler complete"
+    logit "info", "delayedActionHandler complete"
 }
 
 def startFeedback(evt) {
-    log.info "starting feedback"
+    logit "info", "starting feedback"
     def current = feedback.latestState("switch").value
     if (feedback == master) {
-       log.info "feedback is same as master - using event info for state"
+       logit "info", "feedback is same as master - using event info for state"
        current = master.latestState("switch").value
     }
     
     if (current == 'on') {
-        log.info "feedback current state is 'on' so turning it off"
+        logit "info", "feedback current state is 'on' so turning it off"
         feedback.off()
         feedback.on(delay: feedbackDuration)
     } else {
-        log.info "feedback current state is 'off' so turning it on"
+        logit "info", "feedback current state is 'off' so turning it on"
         feedback.on()
         feedback.off(delay: feedbackDuration)
     }
     
     /* runIn(feedbackDuration, endFeedback) */
-    log.info "feedback started!"
+    logit "info", "feedback started!"
 }
 
 def endFeedback() {
-    log.info "ending feedback"
+    logit "info", "ending feedback"
     if (feedback.currentState == 'on') {
-        log.info "ending feedback state is 'on' so turning it off"
+        logit "info", "ending feedback state is 'on' so turning it off"
         feedback.off()
     } else {
-        log.info "ending feedback state is 'off' so turning it on"
+        logit "info", "ending feedback state is 'off' so turning it on"
         feedback.on()
     }
-    log.info "feedback ended!"
+    logit "info", "feedback ended!"
+}
+
+def logit(level, message) {
+    if (logger) {
+        logger.log(level, app.label, message)
+    }
+    
+    switch(level) {
+    	case "debug": log.debug(message); break;
+    	case "info":  log.info(message);  break;
+    	case "warn":  log.warn(message);  break;
+    	case "error": log.error(message); break;
+    	default:      log.info(message);  break;
+    }
 }
 
