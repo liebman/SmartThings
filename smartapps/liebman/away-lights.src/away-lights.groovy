@@ -38,6 +38,7 @@ preferences {
             input "ending", "time", title: "End time"
             input "endingDelay", "number", title: "random delay for end time"
             input "debugEvents", "bool", title: "send debug messages as events", defaultValue: false
+            input "logger", "capability.switch", title: "LogDevice:", required: false
         }
     }
 }
@@ -47,13 +48,13 @@ def getVersion() {
 }
 
 def installed() {
-	log.trace "Installed with settings: ${settings}"
+	logit "trace", "Installed with settings: ${settings}"
 
 	initialize()
 }
 
 def updated() {
-	log.trace "Updated with settings: ${settings}"
+	logit "trace", "Updated with settings: ${settings}"
 
 	unsubscribe()
     unschedule()
@@ -61,18 +62,18 @@ def updated() {
 }
 
 def initialize() {
-    log.trace("initialize() version:${version}")
+    logit "trace", "initialize() version:${version}"
 
     if (modes) {
-        log.debug("subscribing to mode changes")
+        logit "debug", "subscribing to mode changes"
         subscribe(location, "mode", modeChangeHandler)
     }
 
     if (starting) {
-        log.debug("scheduling starting time: ${starting}")
+        logit "debug", "scheduling starting time: ${starting}"
         schedule(starting, startTimeHandler)
         if (ending) {
-            log.debug("scheduling ending time: ${ending}")
+            logit "debug", "scheduling ending time: ${ending}"
             schedule(ending, endTimeHandler)
         }
     }
@@ -80,7 +81,7 @@ def initialize() {
 }
 
 def debug(name, value) {
-    log.debug("${name}: ${value}")
+    logit "debug", "${name}: ${value}"
     if (debugEvents) {
 	    sendEvent(linkText:app.label, name:name, value:value, eventType:"SOLUTION_EVENT", displayed: true)
     }
@@ -90,9 +91,9 @@ def debug(name, value) {
 def modeChangeHandler(evt) {
     debug("modeChangeHandler", evt.value)
     if (shouldBeActive()) {
-        log.debug("should be active so making it so!")
+        logit "debug", "should be active so making it so!"
         if (modeDelay) {
-            log.debug("scheduling intervalHandler to run in ${modeDelay} minutes")
+            logit "debug", "scheduling intervalHandler to run in ${modeDelay} minutes"
             runIn(modeDelay*60, intervalHandler)
         } else {
             doActivity()
@@ -141,11 +142,11 @@ def doActivity() {
 def randomLights() {
     debug("randomLights", "called")
     def off = switches
-    log.debug("switches: ${off}")
+    logit "debug", "switches: ${off}"
     def on = getRandomElements(off, active, true)
-    log.debug("on switches: ${on}")
+    logit "debug", "on switches: ${on}"
     on.each { it.on() }
-    log.debug("off switches: ${off}")
+    logit "debug", "off switches: ${off}"
     off.each { it.off() }
 }
 
@@ -230,3 +231,19 @@ def getEndTime() {
     def date = timeTodayAfter(starting, ending, location.timeZone)
     return date.time
 }
+
+def logit(level, message) {
+    if (logger) {
+        logger.log(level, app.label, message)
+    }
+    
+    switch(level) {
+        case "trace": log.trace(message); break;
+        case "debug": log.debug(message); break;
+        case "info":  log.info(message);  break;
+        case "warn":  log.warn(message);  break;
+        case "error": log.error(message); break;
+        default:      log.info(message);  break;
+    }
+}
+
