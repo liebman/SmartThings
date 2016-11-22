@@ -68,6 +68,21 @@ preferences {
     section("Log these energy meters:") {
         input "energymeters", "capability.energyMeter", multiple: true, required: false
     }
+    section("Log these weather:") {
+        input "weathers", "capability.sensor", multiple: true, required: false
+    }
+    section("Log these batteries:") {
+        input "batteries", "capability.battery", multiple: true, required: false
+    }
+    section("Log these illuminances:") {
+        input "illuminances", "capability.illuminanceMeasurement", multiple: true, required: false
+    }
+    section("Log these thermostats:") {
+        input "thermostats", "capability.thermostat", multiple: true, required: false
+    }
+    section("Log these uvIndex:") {
+        input "uvindexes", "capability.ultravioletIndex", multiple: true, required: false
+    }
 }
 
 def installed() {
@@ -87,6 +102,7 @@ def initialize() {
     subscribe(alarms,		    "alarm",			        eventHandler, [filterEvents: false])
     subscribe(codetectors,	    "carbonMonoxideDetector",	eventHandler, [filterEvents: false])
     subscribe(contacts,		    "contact",      			eventHandler, [filterEvents: false])
+    subscribe(humidities,       "humidity",                 eventHandler, [filterEvents: false])
     subscribe(indicators,	    "indicator",    			eventHandler, [filterEvents: false])
     subscribe(modes,		    "locationMode", 			eventHandler, [filterEvents: false])
     subscribe(motions,		    "motion",       			eventHandler, [filterEvents: false])
@@ -103,6 +119,19 @@ def initialize() {
 	subscribe(location, 		"sunset", 					eventHandler, [filterEvents: false])
 	subscribe(location, 		"sunrise", 					eventHandler, [filterEvents: false])
     subscribe(location, 		null, 						eventHandler, [filterEvents: false])
+    subscribe(illuminances,     "illuminance",              eventHandler, [filterEvents: false])
+    subscribe(illuminances,     "battery",                  eventHandler, [filterEvents: false])
+    subscribe(thermostats,      "thermostat",               eventHandler, [filterEvents: false])
+    subscribe(uvindexes,        "ultravioletIndex",         eventHandler, [filterEvents: false])
+    
+    subscribe(weathers,         "weather",                  eventHandler, [filterEvents: false])
+    subscribe(weathers,         "wind",                     eventHandler, [filterEvents: false])
+    subscribe(weathers,         "windGust",                 eventHandler, [filterEvents: false])
+    subscribe(weathers,         "windDir",                  eventHandler, [filterEvents: false])
+    subscribe(weathers,         "ultravioletIndex",         eventHandler, [filterEvents: false])
+    subscribe(weathers,         "dewpoint",                 eventHandler, [filterEvents: false])
+    subscribe(weathers,         "feelsLike",                eventHandler, [filterEvents: false])
+    
 }
 
 def locationEvent(evt) {
