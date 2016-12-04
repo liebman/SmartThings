@@ -25,64 +25,15 @@ definition(
 
 
 preferences {
-    input "logger", "capability.switch", title: "LogDevice:", required: false
-    section("Log these presence sensors:") {
-        input "presences", "capability.presenceSensor", multiple: true, required: false
+    input "logger", "capability.switch", title: "LogDevice:", required: true
+    section("Log these Sensors") {
+        input "sensors", "capability.sensor", multiple: true, required: false
     }
- 	section("Log these switches:") {
-    	input "switches", "capability.switch", multiple: true, required: false
+
+    section("Log these Actuators") {
+        input "actuators", "capability.actuator", multiple: true, required: false
     }
- 	section("Log these switch levels:") {
-    	input "levels", "capability.switchLevel", multiple: true, required: false
-    }
-	section("Log these motion sensors:") {
-    	input "motions", "capability.motionSensor", multiple: true, required: false
-    }
-	section("Log these temperature sensors:") {
-    	input "temperatures", "capability.temperatureMeasurement", multiple: true, required: false
-    }
-    section("Log these humidity sensors:") {
-    	input "humidities", "capability.relativeHumidityMeasurement", multiple: true, required: false
-    }
-    section("Log these contact sensors:") {
-    	input "contacts", "capability.contactSensor", multiple: true, required: false
-    }
-    section("Log these alarms:") {
-		input "alarms", "capability.alarm", multiple: true, required: false
-	}
-    section("Log these indicators:") {
-    	input "indicators", "capability.indicator", multiple: true, required: false
-    }
-    section("Log these CO detectors:") {
-    	input "codetectors", "capability.carbonMonoxideDetector", multiple: true, required: false
-    }
-    section("Log these smoke detectors:") {
-    	input "smokedetectors", "capability.smokeDetector", multiple: true, required: false
-    }
-    section("Log these water detectors:") {
-    	input "waterdetectors", "capability.waterSensor", multiple: true, required: false
-    }
-    section("Log these acceleration sensors:") {
-    	input "accelerations", "capability.accelerationSensor", multiple: true, required: false
-    }
-    section("Log these energy meters:") {
-        input "energymeters", "capability.energyMeter", multiple: true, required: false
-    }
-    section("Log these weather:") {
-        input "weathers", "capability.sensor", multiple: true, required: false
-    }
-    section("Log these batteries:") {
-        input "batteries", "capability.battery", multiple: true, required: false
-    }
-    section("Log these illuminances:") {
-        input "illuminances", "capability.illuminanceMeasurement", multiple: true, required: false
-    }
-    section("Log these thermostats:") {
-        input "thermostats", "capability.thermostat", multiple: true, required: false
-    }
-    section("Log these uvIndex:") {
-        input "uvindexes", "capability.ultravioletIndex", multiple: true, required: false
-    }
+
 }
 
 def installed() {
@@ -99,39 +50,67 @@ def updated() {
 }
 
 def initialize() {
-    subscribe(alarms,		    "alarm",			        eventHandler, [filterEvents: false])
-    subscribe(codetectors,	    "carbonMonoxideDetector",	eventHandler, [filterEvents: false])
-    subscribe(contacts,		    "contact",      			eventHandler, [filterEvents: false])
-    subscribe(humidities,       "humidity",                 eventHandler, [filterEvents: false])
-    subscribe(indicators,	    "indicator",    			eventHandler, [filterEvents: false])
-    subscribe(modes,		    "locationMode", 			eventHandler, [filterEvents: false])
-    subscribe(motions,		    "motion",       			eventHandler, [filterEvents: false])
-    subscribe(presences,	    "presence",     			eventHandler, [filterEvents: false])
-    subscribe(relays,		    "relaySwitch",  			eventHandler, [filterEvents: false])
-    subscribe(smokedetectors,	"smokeDetector",			eventHandler, [filterEvents: false])
-    subscribe(switches,		    "switch",       			eventHandler, [filterEvents: false])
-    subscribe(levels,		    "level",					eventHandler, [filterEvents: false])
-    subscribe(temperatures,	    "temperature",  			eventHandler, [filterEvents: false])
-    subscribe(waterdetectors,	"water",					eventHandler, [filterEvents: false])
-    subscribe(accelerations,    "acceleration",             eventHandler, [filterEvents: false])
-    subscribe(energymeters,     "power",                	eventHandler, [filterEvents: false])
 	subscribe(location, 		"position", 				eventHandler, [filterEvents: false])
 	subscribe(location, 		"sunset", 					eventHandler, [filterEvents: false])
 	subscribe(location, 		"sunrise", 					eventHandler, [filterEvents: false])
     subscribe(location, 		null, 						eventHandler, [filterEvents: false])
-    subscribe(illuminances,     "illuminance",              eventHandler, [filterEvents: false])
-    subscribe(illuminances,     "battery",                  eventHandler, [filterEvents: false])
-    subscribe(thermostats,      "thermostat",               eventHandler, [filterEvents: false])
-    subscribe(uvindexes,        "ultravioletIndex",         eventHandler, [filterEvents: false])
-    
-    subscribe(weathers,         "weather",                  eventHandler, [filterEvents: false])
-    subscribe(weathers,         "wind",                     eventHandler, [filterEvents: false])
-    subscribe(weathers,         "windGust",                 eventHandler, [filterEvents: false])
-    subscribe(weathers,         "windDir",                  eventHandler, [filterEvents: false])
-    subscribe(weathers,         "ultravioletIndex",         eventHandler, [filterEvents: false])
-    subscribe(weathers,         "dewpoint",                 eventHandler, [filterEvents: false])
-    subscribe(weathers,         "feelsLike",                eventHandler, [filterEvents: false])
-    
+
+    subscribeAll(actuators)
+    subscribeAll(sensors)
+}
+
+def subscribeAll(dev) {
+    subscribe(dev, "acceleration",              eventHandler, [filterEvents: false])
+    subscribe(dev, "alarm",                     eventHandler, [filterEvents: false])
+    subscribe(dev, "apiStatus",                 eventHandler, [filterEvents: false])
+    subscribe(dev, "battery",                   eventHandler, [filterEvents: false])
+    subscribe(dev, "carbonMonoxideDetector",    eventHandler, [filterEvents: false])
+    subscribe(dev, "comfortDewpointExceeded",   eventHandler, [filterEvents: false])
+    subscribe(dev, "comfortDewpointMax",        eventHandler, [filterEvents: false])
+    subscribe(dev, "comfortHumidityMax",        eventHandler, [filterEvents: false])
+    subscribe(dev, "comfortHumidtyExceeded",    eventHandler, [filterEvents: false])
+    subscribe(dev, "contact",                   eventHandler, [filterEvents: false])
+    subscribe(dev, "dewpoint",                  eventHandler, [filterEvents: false])
+    subscribe(dev, "feelsLike",                 eventHandler, [filterEvents: false])
+    subscribe(dev, "hasLeaf",                   eventHandler, [filterEvents: false])
+    subscribe(dev, "humidity",                  eventHandler, [filterEvents: false])
+    subscribe(dev, "illuminance",               eventHandler, [filterEvents: false])
+    subscribe(dev, "indicator",                 eventHandler, [filterEvents: false])
+    subscribe(dev, "lastConnection",            eventHandler, [filterEvents: false])
+    subscribe(dev, "level",                     eventHandler, [filterEvents: false])
+    subscribe(dev, "locationMode",              eventHandler, [filterEvents: false])
+    subscribe(dev, "lockedTempMax",             eventHandler, [filterEvents: false])
+    subscribe(dev, "lockedTempMin",             eventHandler, [filterEvents: false])
+    subscribe(dev, "motion",                    eventHandler, [filterEvents: false])
+    subscribe(dev, "nestPresence",              eventHandler, [filterEvents: false])
+    subscribe(dev, "nestReportData",            eventHandler, [filterEvents: false])
+    subscribe(dev, "nestThermostatMode",        eventHandler, [filterEvents: false])
+    subscribe(dev, "onlineStatus",              eventHandler, [filterEvents: false])
+    subscribe(dev, "percentPrecip",             eventHandler, [filterEvents: false])
+    subscribe(dev, "power",                     eventHandler, [filterEvents: false])
+    subscribe(dev, "presence",                  eventHandler, [filterEvents: false])
+    subscribe(dev, "relaySwitch",               eventHandler, [filterEvents: false])
+    subscribe(dev, "safetyHumidityMin",         eventHandler, [filterEvents: false])
+    subscribe(dev, "safetyTempExceeded",        eventHandler, [filterEvents: false])
+    subscribe(dev, "safetyTempMax",             eventHandler, [filterEvents: false])
+    subscribe(dev, "safetyTempMin",             eventHandler, [filterEvents: false])
+    subscribe(dev, "smokeDetector",             eventHandler, [filterEvents: false])
+    subscribe(dev, "sunlightCorrectionActive",  eventHandler, [filterEvents: false])
+    subscribe(dev, "sunlightCorrectionEnabled", eventHandler, [filterEvents: false])
+    subscribe(dev, "switch",                    eventHandler, [filterEvents: false])
+    subscribe(dev, "targetTemp",                eventHandler, [filterEvents: false])
+    subscribe(dev, "tempLockOn",                eventHandler, [filterEvents: false])
+    subscribe(dev, "temperature",               eventHandler, [filterEvents: false])
+    subscribe(dev, "thermostat",                eventHandler, [filterEvents: false])
+    subscribe(dev, "thermostatOperatingState",  eventHandler, [filterEvents: false])
+    subscribe(dev, "timeToTarget",              eventHandler, [filterEvents: false])
+    subscribe(dev, "ultravioletIndex",          eventHandler, [filterEvents: false])
+    subscribe(dev, "visibility",                eventHandler, [filterEvents: false])
+    subscribe(dev, "water",                     eventHandler, [filterEvents: false])
+    subscribe(dev, "weather",                   eventHandler, [filterEvents: false])
+    subscribe(dev, "wind",                      eventHandler, [filterEvents: false])
+    subscribe(dev, "windDir",                   eventHandler, [filterEvents: false])
+    subscribe(dev, "windGust",                  eventHandler, [filterEvents: false])
 }
 
 def locationEvent(evt) {
